@@ -3,20 +3,26 @@
 
 #include "wrbuf.h"
 #include "utils.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
 
 void wb_init( WrBuf *wb, size_t len ) {
     wb->wbuf = ( const uint8_t * ) malloc( len );
-    wbuf->total = len;
+    wb->total = len;
+    wb->filled = 0;
 }
 
-void wb_append( WrBuf *wb, const uint8_t *buffer, size_t length ) {
+int wb_append( WrBuf *wb, const uint8_t *buffer, size_t length ) {
     if ( length > wb->total - wb->filled ) {
-        wb->wbuf = (uint8_t *) realloc( wb->wbuf, wb->filled + length );
+        wb->wbuf = (uint8_t *) realloc( (void *) wb->wbuf, wb->filled + length );
+        wb->total = wb->filled + length;
     }
-    memcpy( wb->wbuf + wb->filled, buffer, length );
+    memcpy( (void *) (wb->wbuf + wb->filled), (void *) buffer, length );
+    wb->filled += length;
+    return wb->filled;
 }
 
 int wb_remaining( WrBuf *wb ) {
@@ -24,11 +30,11 @@ int wb_remaining( WrBuf *wb ) {
 }
 
 int wb_consume( WrBuf *wb, int sock ) {
-    int ret = send( sock, wb->wbuf + wb->filled, wb->total - wb->filled, 0 );
+    int ret = send( sock, (void *) wb->wbuf, wb->filled, 0 );
 
     if ( ret > 0 ) {
-        memmove( wb->wbuf, wb->wbuf + ret, ret ); 
         wb->filled -= ret;
+        memmove( (void *) wb->wbuf, (void *) ( wb->wbuf + ret ), wb->filled ); 
     } else if ( ret == 0 ) {
         PRINTF("No data written by the WriteBuffer. Huh. \n");
     } else {
@@ -39,6 +45,6 @@ int wb_consume( WrBuf *wb, int sock ) {
 }
 
 void wb_free( WrBuf *wb ) {
-    free( wb->wbuf );
+    free( (void *) wb->wbuf );
 }
 #endif

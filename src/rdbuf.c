@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <stdlib.h>
 
 void rb_init( RdBuf *rb, size_t len ) {
     rb->rbuf = ( const uint8_t * ) malloc( len );    
@@ -15,8 +16,9 @@ void rb_init( RdBuf *rb, size_t len ) {
 
 // is currently len is absolute length
 int rb_allocate( RdBuf *rb, int len ) {
-    rb->rbuf = (uint8_t *) realloc( rb->rbuf, len );
-    total += len;
+    rb->rbuf = (uint8_t *) realloc( ( void * ) rb->rbuf, len );
+    rb->total = len;
+    return rb->total;
 }
 
 size_t rb_remaining( RdBuf *rb ){
@@ -24,7 +26,7 @@ size_t rb_remaining( RdBuf *rb ){
 }
 
 int rb_fill( RdBuf *rb, int sock ) {
-    int ret = recv( sock, rb->rbuf + rb->filled, rb->total - rb->filled, 0 );
+    int ret = recv( sock, ( void * ) ( rb->rbuf + rb->filled ) , rb->total - rb->filled, 0 );
 
     if ( ret > 0 ) {
         rb->filled += ret;
@@ -42,7 +44,7 @@ int rb_consume( RdBuf *rb, size_t length ) {
         PRINTF("Invalid ReadBuffer Consume\n");
         return -1;
     }
-    memmove( rb->rbuf, rb->rbuf + length, length ); 
+    memmove( (void *) rb->rbuf, rb->rbuf + length, length ); 
     rb->filled -= length;
 
     return length;
@@ -53,7 +55,7 @@ const uint8_t *rb_get( RdBuf *rb ) {
 }
 
 void rb_free( RdBuf *rb ){
-    free( rb->rbuf );
+    free( (void *) rb->rbuf );
 }
 
 #endif

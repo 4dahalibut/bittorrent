@@ -1,14 +1,17 @@
 #ifndef RD_BUF_H
 #define RD_BUF_H
 
+#include <stdio.h>
 #include <stdint.h>
 
 // A buffer for reading
-typedef struct RdBuf {
+typedef struct {
     const uint8_t *rbuf;
     size_t total;
     size_t filled;
-}
+} RdBuf;
+
+void rb_init( RdBuf *rb, size_t len );
 
 //rbuf.allocate(size_t length) [Allocates room for a given # of bytes]
 int rb_allocate( RdBuf *rb, int len );
@@ -25,4 +28,5 @@ int rb_consume( RdBuf *rb, size_t length );
 //rbuf.get() [Gets a const uint8_t pointer to the internal buffer]
 const uint8_t *rb_get( RdBuf *rb );
 
+void rb_free( RdBuf *rb );
 #endif
